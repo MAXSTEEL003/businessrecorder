@@ -566,19 +566,19 @@ function acMoveSelection(step) {
   items[acActiveIndex].scrollIntoView({ block: 'nearest' });
 }
 
-function acSelectValue(val, key, id, td) {
+async function acSelectValue(val, key, id, td) {
   hideAutocomplete();
   const r = records.find(x => x.id === id);
   if (r) {
     r[key] = val;
     applyAutoCalc(r);
-    save();
+    await window._fbSave(r);
   }
   renderTable();
   activeCell = null;
 }
 
-function commitCell(td, id, key) {
+async function commitCell(td, id, key) {
   const input = td.querySelector('input,select');
   if (!input) return;
   const val = input.value.trim();
@@ -589,9 +589,8 @@ function commitCell(td, id, key) {
 
   r[key] = val;
   applyAutoCalc(r);
-  save();
+  await window._fbSave(r);
 
-  // Re-render just this row cleanly
   renderTable();
   activeCell = null;
 }
@@ -652,33 +651,30 @@ function newEmptyRecord(afterId) {
   return r;
 }
 
-function addRowTop() {
+async function addRowTop() {
   const r = newEmptyRecord(null);
-  records.unshift(r);
-  save();
-  renderTable();
-  // Focus first editable cell of first row
+  await window._fbSave(r);
+  // onSnapshot will refresh records & re-render automatically
   setTimeout(() => {
     const firstCell = document.querySelector('#tableBody tr:first-child td.editable-cell');
     if (firstCell) activateCell(firstCell);
-  }, 30);
+  }, 400);
 }
 
-window.addRowBelow = function (afterId) {
+window.addRowBelow = async function (afterId) {
   commitActive();
   const r = newEmptyRecord(afterId);
-  const idx = records.findIndex(x => x.id === afterId);
-  records.splice(idx + 1, 0, r);
-  save();
-  renderTable();
+  await window._fbSave(r);
   setTimeout(() => {
+    // After Firestore onSnapshot re-renders, focus new row
     const rows = document.querySelectorAll('#tableBody tr');
+    const idx = [...rows].findIndex(row => row.dataset.id === afterId);
     const targetRow = rows[idx + 1];
     if (targetRow) {
       const cell = targetRow.querySelector('td.editable-cell');
       if (cell) activateCell(cell);
     }
-  }, 30);
+  }, 400);
 };
 
 // ─────────────────────────────────────────────
@@ -723,11 +719,11 @@ function closeDelete() {
   document.getElementById('deleteOverlay').classList.add('hidden');
   deleteId = null;
 }
-document.getElementById('btnConfirmDelete').addEventListener('click', () => {
-  records = records.filter(x => x.id !== deleteId);
-  save();
-  renderTable();
+document.getElementById('btnConfirmDelete').addEventListener('click', async () => {
+  const id = deleteId;
   closeDelete();
+  await window._fbDelete(id);
+  // onSnapshot auto-refreshes the table
   showToast('🗑 Record deleted.', 'warn');
 });
 document.getElementById('btnCloseDelete').addEventListener('click', closeDelete);
@@ -788,20 +784,22 @@ document.getElementById('importFile').addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => {
+  reader.onload = async ev => {
     const lines = ev.target.result.split(/\r?\n/).filter(Boolean);
     if (lines.length < 2) { showToast('Empty CSV!', 'error'); return; }
     let added = 0;
+    const writes = [];
     for (let i = 1; i < lines.length; i++) {
       const vals = parseCSVRow(lines[i]);
       if (vals.length < 2) continue;
       const data = { id: uid() };
       CSV_KEYS.forEach((k, j) => { data[k] = (vals[j] ?? '').trim(); });
       applyAutoCalc(data);
-      records.push(data);
+      writes.push(window._fbSave(data));
       added++;
     }
-    save(); renderTable();
+    await Promise.all(writes);
+    // onSnapshot auto-refreshes after Firestore writes
     showToast(`✔ Imported ${added} record(s)!`);
   };
   reader.readAsText(file);
@@ -871,9 +869,10 @@ function loadSampleData() {
 // ─────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────
-load();
-if (!records.length) { loadSampleData(); save(); }
-// Migrate old records: re-apply auto-calc
-records.forEach(applyAutoCalc);
+// Data comes from Firestore onSnapshot (set up in initApp above).
+// buildHeader runs once here; renderTable is called by onSnapshot.
 buildHeader();
-renderTable();
+// Show loading state until first snapshot arrives
+document.getElementById('emptyState').classList.add('show');
+document.getElementById('emptyState').innerHTML =
+  '<div class="empty-icon">⏳</div><p>Connecting to Firestore…</p>';

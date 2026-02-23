@@ -1,30 +1,30 @@
 /**
- * firebase.js  — Firebase SDK init (CDN ESM, no build step needed)
+ * firebase.js  — Firebase SDK (CDN ESM, no bundler needed)
  *
- * HOW TO USE:
- *  1. Fill in your values in firebase-config.json
- *  2. In Firebase Console → Authentication → Sign-in method → enable "Email/Password"
- *  3. In Firebase Console → Firestore → Create database (start in production mode)
- *  4. Paste the Firestore Security Rules below into the Rules tab
+ * Project: tejasbusinessrecord
  *
- * FIRESTORE SECURITY RULES (paste into Firebase Console):
- * ─────────────────────────────────────────────────────────
+ * ── FIRESTORE SECURITY RULES ─────────────────────────────────
+ *  Paste these into Firebase Console → Firestore → Rules:
+ *
  *   rules_version = '2';
  *   service cloud.firestore {
  *     match /databases/{database}/documents {
  *       match /users/{userId}/{document=**} {
- *         allow read, write: if request.auth != null && request.auth.uid == userId;
+ *         allow read, write: if request.auth != null
+ *                            && request.auth.uid == userId;
  *       }
  *     }
  *   }
- * ─────────────────────────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────
  */
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { initializeApp }
+    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getAnalytics }
+    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js';
 import {
     getAuth, onAuthStateChanged,
-    signInWithEmailAndPassword,
-    signOut
+    signInWithEmailAndPassword, signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
     getFirestore,
@@ -34,23 +34,31 @@ import {
     query, orderBy
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-/* ── Load config from firebase-config.json (git-ignored) ── */
-async function loadConfig() {
-    const resp = await fetch('./firebase-config.json');
-    if (!resp.ok) throw new Error('firebase-config.json not found. Please fill it in.');
-    return resp.json();
-}
-
-/* ── Initialise Firebase ── */
-let _app, _auth, _db;
+/* ── Config (loaded from git-ignored firebase-config.json) ── */
+let _app, _auth, _db, _analytics;
 
 export async function initFirebase() {
-    if (_app) return { auth: _auth, db: _db };
-    const config = await loadConfig();
+    if (_app) return { auth: _auth, db: _db, analytics: _analytics };
+
+    let config;
+    try {
+        const resp = await fetch('./firebase-config.json');
+        if (!resp.ok) throw new Error('firebase-config.json not found.');
+        config = await resp.json();
+    } catch (e) {
+        throw new Error('Could not load Firebase config: ' + e.message);
+    }
+
     _app = initializeApp(config);
     _auth = getAuth(_app);
     _db = getFirestore(_app);
-    return { auth: _auth, db: _db };
+
+    // Analytics (only in browser with measurementId)
+    try {
+        if (config.measurementId) _analytics = getAnalytics(_app);
+    } catch (_) { /* non-blocking */ }
+
+    return { auth: _auth, db: _db, analytics: _analytics };
 }
 
 /* ── Re-export Firebase helpers ── */
@@ -64,13 +72,12 @@ export {
     query, orderBy
 };
 
-/* ── Firestore path helpers (records scoped per user) ── */
-export function recordsCol(db, uid) {
-    return collection(db, 'users', uid, 'records');
-}
-export function recordDoc(db, uid, id) {
-    return doc(db, 'users', uid, 'records', id);
-}
-export function ratesDoc(db, uid) {
-    return doc(db, 'users', uid, 'meta', 'brokerageRates');
-}
+/* ── Firestore path helpers (data scoped per authenticated user) ── */
+export const recordsCol = (db, uid) =>
+    collection(db, 'users', uid, 'records');
+
+export const recordDoc = (db, uid, id) =>
+    doc(db, 'users', uid, 'records', id);
+
+export const ratesDoc = (db, uid) =>
+    doc(db, 'users', uid, 'meta', 'brokerageRates');
