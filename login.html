@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sign In — Business Records Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #080d14;
+            --surface: #0f1623;
+            --surface2: #151f30;
+            --border: #1e2d45;
+            --border2: #253652;
+            --primary: #3b82f6;
+            --accent: #60a5fa;
+            --purple: #a78bfa;
+            --danger: #f87171;
+            --text: #f0f6ff;
+            --muted: #7d93b2;
+            --dim: #3d5070;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background-image: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59, 130, 246, .14) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 40% at 90% 110%, rgba(167, 139, 250, .08) 0%, transparent 70%);
+        }
+
+        /* card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: 16px;
+            padding: 2.4rem 2rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, .6);
+            animation: cardIn .35s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        @keyframes cardIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* logo */
+        .logo-wrap {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #3b82f6, #a78bfa);
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            font-size: 1.6rem;
+            margin: 0 auto .85rem;
+            box-shadow: 0 0 28px rgba(59, 130, 246, .45);
+        }
+
+        .logo-wrap h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-wrap p {
+            font-size: .75rem;
+            color: var(--muted);
+            margin-top: .25rem;
+        }
+
+        /* form */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: .7rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: .35rem;
+        }
+
+        input {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: .65rem .85rem;
+            font-size: .88rem;
+            font-family: inherit;
+            outline: none;
+            transition: all .18s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+            background: var(--surface2);
+        }
+
+        input::placeholder {
+            color: var(--dim);
+        }
+
+        /* btn */
+        .btn-login {
+            width: 100%;
+            padding: .72rem;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: .9rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            margin-top: .5rem;
+            transition: all .18s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, .35);
+        }
+
+        .btn-login:hover {
+            box-shadow: 0 4px 24px rgba(59, 130, 246, .55);
+            transform: translateY(-1px);
+        }
+
+        .btn-login:active {
+            transform: scale(.98);
+        }
+
+        .btn-login:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* spinner */
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* error */
+        .error-msg {
+            background: rgba(248, 113, 113, .1);
+            border: 1px solid rgba(248, 113, 113, .3);
+            color: var(--danger);
+            border-radius: 8px;
+            padding: .6rem .85rem;
+            font-size: .78rem;
+            font-weight: 600;
+            margin-top: .85rem;
+            display: none;
+            animation: shakeIn .25s ease;
+        }
+
+        @keyframes shakeIn {
+
+            0%,
+            100% {
+                transform: translateX(0)
+            }
+
+            20%,
+            60% {
+                transform: translateX(-4px)
+            }
+
+            40%,
+            80% {
+                transform: translateX(4px)
+            }
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 1.3rem 0;
+        }
+
+        .hint {
+            text-align: center;
+            font-size: .72rem;
+            color: var(--dim);
+        }
+
+        .hint span {
+            color: var(--accent);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="logo-wrap">
+            <div class="logo-icon">📊</div>
+            <h1>Business Records</h1>
+            <p>Sign in to manage your records</p>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password"
+                onkeydown="if(event.key==='Enter') login()" />
+        </div>
+
+        <button class="btn-login" id="loginBtn" onclick="login()">
+            <span id="btnLabel">Sign In</span>
+            <div class="spinner" id="spinner"></div>
+        </button>
+
+        <div class="error-msg" id="errorMsg"></div>
+
+        <div class="divider"></div>
+        <p class="hint">Create users in the <span>Firebase Console</span> → Authentication</p>
+    </div>
+
+    <script type="module">
+        import { initFirebase, signInWithEmailAndPassword, onAuthStateChanged } from './firebase.js';
+
+        let auth;
+
+        (async () => {
+            try {
+                const fb = await initFirebase();
+                auth = fb.auth;
+                // If already signed in → redirect
+                onAuthStateChanged(auth, user => {
+                    if (user) location.replace('./index.html');
+                });
+            } catch (e) {
+                showError('Firebase not configured. Please fill in firebase-config.json.');
+            }
+        })();
+
+        window.login = async function () {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const lbl = document.getElementById('btnLabel');
+            const spin = document.getElementById('spinner');
+
+            if (!email || !password) { showError('Please enter email and password.'); return; }
+
+            btn.disabled = true;
+            lbl.style.display = 'none';
+            spin.style.display = 'block';
+            hideError();
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                location.replace('./index.html');
+            } catch (e) {
+                showError(friendlyError(e.code));
+                btn.disabled = false;
+                lbl.style.display = '';
+                spin.style.display = 'none';
+            }
+        };
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+        function hideError() { document.getElementById('errorMsg').style.display = 'none'; }
+
+        function friendlyError(code) {
+            const map = {
+                'auth/user-not-found': 'No account found with that email.',
+                'auth/wrong-password': 'Incorrect password. Please try again.',
+                'auth/invalid-email': 'That doesn\'t look like a valid email.',
+                'auth/too-many-requests': 'Too many failed attempts. Try again later.',
+                'auth/invalid-credential': 'Wrong email or password.',
+            };
+            return map[code] || 'Login failed. Check your credentials.';
+        }
+    </script>
+</body>
+
+</html>
