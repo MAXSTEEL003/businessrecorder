@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Business Records Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <!-- ===== HEADER ===== -->
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="brand">
+                <div class="brand-icon">📊</div>
+                <div>
+                    <h1>Business Records Manager</h1>
+                    <p class="tagline">Track payments, bills &amp; miller transactions</p>
+                </div>
+            </div>
+            <div class="header-nav">
+                <a href="print.html" class="btn btn-ghost" target="_blank">🖨 Print/PDF</a>
+                <a href="brokerage.html" class="btn btn-ghost" target="_blank">💰 Brokerage</a>
+            </div>
+            <div class="header-actions">
+                <button id="btnImport" class="btn btn-ghost" title="Import CSV">⬆ Import</button>
+                <button id="btnExport" class="btn btn-ghost" title="Export CSV">⬇ Export</button>
+                <button id="btnAddRow" class="btn btn-primary">＋ New Row</button>
+                <button data-action="logout" class="btn btn-ghost" title="Logout"
+                    style="color:var(--danger);border-color:rgba(248,113,113,.3);">⏻ Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== STATS BAR ===== -->
+    <section class="stats-bar">
+        <div class="stat-card">
+            <span class="stat-label">Total Records</span>
+            <span class="stat-value" id="statTotal">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Pending Payments</span>
+            <span class="stat-value pending" id="statPending">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Cleared</span>
+            <span class="stat-value cleared" id="statCleared">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Total Amount (₹)</span>
+            <span class="stat-value amount" id="statAmount">0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Total Net Amt (₹)</span>
+            <span class="stat-value amount" id="statNet">0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Pending Amt (₹)</span>
+            <span class="stat-value" style="color:#f85149" id="statPendAmt">0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Avg Pending Days</span>
+            <span class="stat-value" style="color:#d29922" id="statAvgDays">0 days</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Total Commission (₹)</span>
+            <span class="stat-value" style="color:#a78bfa" id="statComm">0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Total Chq Amt (₹)</span>
+            <span class="stat-value" style="color:#38bdf8" id="statChq">0.00</span>
+        </div>
+    </section>
+
+    <!-- ===== FILTER BAR ===== -->
+    <section class="filter-bar">
+        <input type="text" id="searchBox" class="filter-input"
+            placeholder="🔍 Search by miller, brand, shop, area..." />
+        <select id="filterStatus" class="filter-select">
+            <option value="">All Statuses</option>
+            <option value="Cleared">Cleared</option>
+            <option value="PAYMENT NOT RECD">Payment Not Recd</option>
+            <option value="PENDING">Pending (any)</option>
+        </select>
+        <input type="date" id="filterFrom" class="filter-input small-filter" title="From Date" />
+        <input type="date" id="filterTo" class="filter-input small-filter" title="To Date" />
+        <button id="btnClearFilter" class="btn btn-ghost">✕ Clear</button>
+    </section>
+
+    <!-- ===== KEYBOARD HINTS ===== -->
+    <div class="kb-hint">
+        <strong>Excel-like Navigation:</strong> 
+        <kbd>Enter</kbd> / <kbd>Tab</kbd> / <kbd>→</kbd> next cell &nbsp;|&nbsp;
+        <kbd>Shift+Enter</kbd> / <kbd>Shift+Tab</kbd> / <kbd>↓</kbd> / <kbd>↑</kbd> navigate &nbsp;|&nbsp;
+        <kbd>←</kbd> prev cell &nbsp;|&nbsp;
+        <kbd>Home</kbd> / <kbd>End</kbd> row start/end &nbsp;|&nbsp;
+        <kbd>Esc</kbd> cancel &nbsp;|&nbsp;
+        ⚡ = auto-calculated &nbsp;|&nbsp;
+        ＋ = insert row
+    </div>
+
+    <!-- ===== TABLE WRAPPER ===== -->
+    <div class="table-wrapper">
+        <table id="recordsTable">
+            <thead>
+                <tr>
+                    <th class="col-actions sticky-col">Actions</th>
+                    <th class="sortable" data-col="date">Date ↕</th>
+                    <th class="sortable" data-col="millerName">Miller Name ↕</th>
+                    <th>Place</th>
+                    <th>Brand</th>
+                    <th>Shop Name</th>
+                    <th>No of Days</th>
+                    <th>No of Day Rec</th>
+                    <th>Area</th>
+                    <th>Bill No</th>
+                    <th class="num-col">QTY</th>
+                    <th class="num-col">Rate</th>
+                    <th class="num-col">Amount</th>
+                    <th>L.R.</th>
+                    <th>C.C.</th>
+                    <th class="num-col">TDS</th>
+                    <th class="num-col">Shortage</th>
+                    <th>Seller</th>
+                    <th class="num-col">Diff. in</th>
+                    <th class="num-col">Net Amt</th>
+                    <th class="num-col">Chq Amt</th>
+                    <th>Chq No.</th>
+                    <th>Payment Date</th>
+                    <th>Bank</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Rows injected by JS -->
+            </tbody>
+        </table>
+        <div id="emptyState" class="empty-state">
+            <div class="empty-icon">📋</div>
+            <p>No records found. Click <strong>+ Add Record</strong> to get started.</p>
+        </div>
+    </div>
+
+    <!-- ===== MODAL OVERLAY ===== -->
+    <div id="modalOverlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Record</h2>
+                <button id="btnCloseModal" class="modal-close">✕</button>
+            </div>
+            <form id="recordForm" class="modal-form" autocomplete="off">
+                <div class="form-grid">
+
+                    <!-- Row 1 -->
+                    <div class="form-group">
+                        <label for="f_date">Date *</label>
+                        <input type="date" id="f_date" name="date" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_millerName">Miller Name *</label>
+                        <input type="text" id="f_millerName" name="millerName" placeholder="e.g. MAHENDRA RICE INDUSTRY"
+                            required />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_place">Place</label>
+                        <input type="text" id="f_place" name="place" placeholder="e.g. MIRYALGUDA" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_brand">Brand</label>
+                        <input type="text" id="f_brand" name="brand" placeholder="e.g. KOLAM RST" />
+                    </div>
+
+                    <!-- Row 2 -->
+                    <div class="form-group">
+                        <label for="f_shopName">Shop Name</label>
+                        <input type="text" id="f_shopName" name="shopName" placeholder="e.g. HANUMAN TRADING CO" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_noOfDays">No of Days</label>
+                        <input type="text" id="f_noOfDays" name="noOfDays" placeholder="e.g. 21 DAYS PENDING" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_noOfDayRec">No of Day Rec</label>
+                        <input type="text" id="f_noOfDayRec" name="noOfDayRec" placeholder="e.g. PAYMENT NOT RECD" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_area">Area</label>
+                        <input type="text" id="f_area" name="area" placeholder="e.g. BTH" />
+                    </div>
+
+                    <!-- Row 3 -->
+                    <div class="form-group">
+                        <label for="f_billNo">Bill No</label>
+                        <input type="text" id="f_billNo" name="billNo" placeholder="e.g. 3650" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_qty">QTY</label>
+                        <input type="number" id="f_qty" name="qty" step="0.01" placeholder="0.00"
+                            oninput="calcAmount()" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_rate">Rate</label>
+                        <input type="number" id="f_rate" name="rate" step="0.01" placeholder="0.00"
+                            oninput="calcAmount()" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_amount">Amount (auto)</label>
+                        <input type="number" id="f_amount" name="amount" step="0.01" placeholder="0.00" readonly
+                            class="readonly-field" />
+                    </div>
+
+                    <!-- Row 4 -->
+                    <div class="form-group">
+                        <label for="f_lr">L.R.</label>
+                        <input type="text" id="f_lr" name="lr" placeholder="L.R. number" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_cc">C.C.</label>
+                        <input type="text" id="f_cc" name="cc" placeholder="C.C." />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_tds">TDS</label>
+                        <input type="number" id="f_tds" name="tds" step="0.01" placeholder="0.00"
+                            oninput="calcNetAmt()" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_shortage">Shortage</label>
+                        <input type="number" id="f_shortage" name="shortage" step="0.01" placeholder="0.00"
+                            oninput="calcNetAmt()" />
+                    </div>
+
+                    <!-- Row 5 -->
+                    <div class="form-group">
+                        <label for="f_seller">Seller</label>
+                        <input type="text" id="f_seller" name="seller" placeholder="Seller name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_diffIn">Diff. in</label>
+                        <input type="number" id="f_diffIn" name="diffIn" step="0.01" placeholder="0.00"
+                            oninput="calcNetAmt()" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_netAmt">Net Amt (auto)</label>
+                        <input type="number" id="f_netAmt" name="netAmt" step="0.01" placeholder="0.00" readonly
+                            class="readonly-field" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_chqAmt">Chq Amt</label>
+                        <input type="number" id="f_chqAmt" name="chqAmt" step="0.01" placeholder="0.00" />
+                    </div>
+
+                    <!-- Row 6 -->
+                    <div class="form-group">
+                        <label for="f_chqNo">Chq No.</label>
+                        <input type="text" id="f_chqNo" name="chqNo" placeholder="Cheque number" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_paymentDate">Payment Date</label>
+                        <input type="date" id="f_paymentDate" name="paymentDate" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_bank">Bank</label>
+                        <input type="text" id="f_bank" name="bank" placeholder="e.g. SBI, HDFC" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_status">Status *</label>
+                        <select id="f_status" name="status" required>
+                            <option value="">-- Select --</option>
+                            <option value="21 DAYS PENDING">21 Days Pending</option>
+                            <option value="Cleared">Cleared</option>
+                            <option value="PAYMENT NOT RECD">Payment Not Recd</option>
+                        </select>
+                    </div>
+
+                </div><!-- /form-grid -->
+
+                <div class="modal-footer">
+                    <button type="button" id="btnCancelForm" class="btn btn-ghost">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitForm">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== DELETE CONFIRM ===== -->
+    <div id="deleteOverlay" class="modal-overlay hidden">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2>Delete Record?</h2>
+                <button id="btnCloseDelete" class="modal-close">✕</button>
+            </div>
+            <p style="padding:1rem 1.5rem;color:var(--text-muted)">This action cannot be undone.</p>
+            <div class="modal-footer">
+                <button id="btnCancelDelete" class="btn btn-ghost">Cancel</button>
+                <button id="btnConfirmDelete" class="btn btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="importFile" accept=".csv" style="display:none" />
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>

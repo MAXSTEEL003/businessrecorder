@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Brokerage Calculator — Business Records</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #080d14;
+            --surface: #0f1623;
+            --surface2: #151f30;
+            --surface3: #1a2640;
+            --border: #1e2d45;
+            --border2: #253652;
+            --border-hi: #2e4470;
+            --primary: #3b82f6;
+            --accent: #60a5fa;
+            --purple: #a78bfa;
+            --green: #34d399;
+            --yellow: #fbbf24;
+            --red: #f87171;
+            --text: #f0f6ff;
+            --muted: #7d93b2;
+            --dim: #3d5070;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 8px 40px rgba(0, 0, 0, .6);
+            --glow: 0 0 32px rgba(59, 130, 246, .2);
+            --T: .18s cubic-bezier(.4, 0, .2, 1);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse 80% 40% at 0% 0%, rgba(59, 130, 246, .08) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 40% at 100% 100%, rgba(167, 139, 250, .06) 0%, transparent 55%);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 3px;
+        }
+
+        /* ─ HEADER ─ */
+        .hdr {
+            background: rgba(8, 13, 20, .9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: .85rem 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 0 var(--border), 0 4px 24px rgba(0, 0, 0, .4);
+        }
+
+        .hdr-brand {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+        }
+
+        .hdr-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #3b82f6, #a78bfa);
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 1.1rem;
+            box-shadow: 0 0 18px rgba(59, 130, 246, .4);
+            flex-shrink: 0;
+        }
+
+        .hdr h1 {
+            font-size: 1.05rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa, #f0abfc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -.02em;
+        }
+
+        .hdr p {
+            font-size: .68rem;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+
+        .hdr-right {
+            display: flex;
+            gap: .45rem;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        /* ─ BUTTONS ─ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            padding: .48rem .95rem;
+            border-radius: var(--radius-sm);
+            font-size: .78rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+            text-decoration: none;
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--T);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, .09) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform .4s ease;
+        }
+
+        .btn:hover::before {
+            transform: translateX(100%);
+        }
+
+        .btn:active {
+            transform: scale(.97);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #fff;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .15);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 22px rgba(59, 130, 246, .4), 0 4px 12px rgba(0, 0, 0, .3);
+            transform: translateY(-1px);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border2);
+        }
+
+        .btn-ghost:hover {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: var(--border-hi);
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--red);
+            border: 1px solid rgba(248, 113, 113, .3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(248, 113, 113, .1);
+        }
+
+        .btn-sm {
+            padding: .35rem .7rem;
+            font-size: .72rem;
+        }
+
+        /* ─ TABS ─ */
+        .tabs-wrap {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: .6rem 1.8rem;
+            display: flex;
+            gap: .4rem;
+            align-items: center;
+        }
+
+        .tab-btn {
+            padding: .5rem 1.2rem;
+            border-radius: var(--radius-sm);
+            font-size: .82rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid var(--border2);
+            background: transparent;
+            color: var(--muted);
+            font-family: inherit;
+            transition: all var(--T);
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: var(--border-hi);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 0 18px rgba(59, 130, 246, .35);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--purple));
+        }
+
+        /* ─ STATS STRIP ─ */
+        .stats-strip {
+            display: flex;
+            gap: .65rem;
+            padding: .85rem 1.8rem;
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+            background: linear-gradient(to right, var(--surface), rgba(8, 13, 20, .9));
+        }
+
+        .stat-pill {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            padding: .45rem 1.1rem;
+            transition: all var(--T);
+        }
+
+        .stat-pill:hover {
+            border-color: var(--border-hi);
+            box-shadow: 0 0 12px rgba(59, 130, 246, .12);
+        }
+
+        .stat-pill .icon {
+            font-size: 1rem;
+        }
+
+        .stat-pill .lbl {
+            font-size: .6rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            display: block;
+        }
+
+        .stat-pill .val {
+            font-size: .95rem;
+            font-weight: 800;
+            display: block;
+            line-height: 1.2;
+        }
+
+        /* ─ CONTROLS ─ */
+        .ctrl-bar {
+            display: flex;
+            gap: .55rem;
+            padding: .7rem 1.8rem;
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .ctrl {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text);
+            padding: .44rem .8rem;
+            font-size: .8rem;
+            font-family: inherit;
+            outline: none;
+            transition: all var(--T);
+        }
+
+        .ctrl:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+            background: var(--surface3);
+        }
+
+        .ctrl::placeholder {
+            color: var(--dim);
+        }
+
+        /* ─ CONTENT ─ */
+        .tab-content {
+            display: none;
+            padding: 1.4rem 1.8rem;
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeUp .2s ease;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        /* ─ GROUP CARD ─ */
+        .grp-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: .8rem;
+            overflow: hidden;
+            transition: border-color var(--T), box-shadow var(--T);
+            animation: cardIn .25s ease both;
+        }
+
+        @keyframes cardIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .grp-card:nth-child(2) {
+            animation-delay: .05s
+        }
+
+        .grp-card:nth-child(3) {
+            animation-delay: .1s
+        }
+
+        .grp-card:nth-child(4) {
+            animation-delay: .15s
+        }
+
+        .grp-card:nth-child(5) {
+            animation-delay: .2s
+        }
+
+        .grp-card:hover {
+            border-color: var(--border-hi);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, .4);
+        }
+
+        .grp-card.has-comm {
+            border-left: 3px solid var(--green);
+        }
+
+        .grp-card.is-nidhi {
+            border-left: 3px solid var(--purple);
+        }
+
+        /* ─ SUMMARY ROW ─ */
+        .sum-row {
+            display: grid;
+            gap: .5rem;
+            padding: .85rem 1.2rem;
+            align-items: center;
+        }
+
+        .sum-row.shop-layout {
+            grid-template-columns: 2.6fr 1.8fr 1.2fr 1.8fr 1.6fr 1.6fr 110px;
+        }
+
+        .sum-row.miller-layout {
+            grid-template-columns: 2.6fr 1.8fr 1.2fr 1.8fr 1.6fr 1.6fr 110px;
+        }
+
+        /* ─ COL LABELS ─ */
+        .col-labels {
+            display: grid;
+            gap: .5rem;
+            padding: .38rem 1.2rem;
+            background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .col-labels.shop-layout {
+            grid-template-columns: 2.6fr 1.8fr 1.2fr 1.8fr 1.6fr 1.6fr 110px;
+        }
+
+        .col-labels.miller-layout {
+            grid-template-columns: 2.6fr 1.8fr 1.2fr 1.8fr 1.6fr 1.6fr 110px;
+        }
+
+        .col-labels span {
+            font-size: .6rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            font-weight: 600;
+        }
+
+        .col-labels .cr {
+            text-align: right;
+        }
+
+        .name-col .main-name {
+            font-weight: 700;
+            font-size: .9rem;
+            letter-spacing: -.01em;
+        }
+
+        .name-col .sub {
+            font-size: .68rem;
+            color: var(--muted);
+            margin-top: 2px;
+            display: flex;
+            gap: .4rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: var(--surface3);
+            border: 1px solid var(--border2);
+            border-radius: 20px;
+            padding: .1rem .45rem;
+            font-size: .62rem;
+            color: var(--muted);
+        }
+
+        .nidhi-tag {
+            background: rgba(167, 139, 250, .15);
+            border: 1px solid rgba(167, 139, 250, .3);
+            color: var(--purple);
+        }
+
+        .cr {
+            text-align: right;
+        }
+
+        .qty-val {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: .92rem;
+        }
+
+        .amt-val {
+            color: var(--muted);
+            font-size: .8rem;
+        }
+
+        .comm-val {
+            font-weight: 800;
+            color: var(--green);
+            font-size: .98rem;
+        }
+
+        .comm-zero {
+            color: var(--dim);
+            font-size: .85rem;
+        }
+
+        /* ─ RATE INPUT ─ */
+        .rate-wrap {
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+        }
+
+        .rate-inp {
+            width: 78px;
+            background: var(--surface3);
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            padding: .35rem .5rem;
+            color: var(--text);
+            font-size: .8rem;
+            font-family: inherit;
+            text-align: right;
+            outline: none;
+            transition: all var(--T);
+        }
+
+        .rate-inp:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+        }
+
+        .rate-unit {
+            font-size: .68rem;
+            color: var(--muted);
+        }
+
+        .locked {
+            display: inline-flex;
+            align-items: center;
+            gap: .3rem;
+            background: rgba(167, 139, 250, .12);
+            border: 1px solid rgba(167, 139, 250, .25);
+            color: var(--purple);
+            border-radius: 6px;
+            padding: .3rem .6rem;
+            font-size: .72rem;
+            font-weight: 600;
+        }
+
+        /* ─ EXPAND BTN ─ */
+        .exp-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid var(--border2);
+            color: var(--muted);
+            border-radius: 6px;
+            padding: .4rem .65rem;
+            font-size: .72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--T);
+        }
+
+        .exp-btn:hover {
+            border-color: var(--primary);
+            color: var(--accent);
+            background: rgba(59, 130, 246, .08);
+        }
+
+        .exp-btn.open {
+            border-color: var(--primary);
+            color: var(--accent);
+            background: rgba(59, 130, 246, .08);
+        }
+
+        /* ─ DETAIL SECTION ─ */
+        .detail-sec {
+            display: none;
+            border-top: 1px solid var(--border);
+        }
+
+        .detail-sec.open {
+            display: block;
+            animation: fadeUp .18s ease;
+        }
+
+        .sub-grp-hdr {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .55rem 1.4rem;
+            background: var(--surface3);
+            border-bottom: 1px solid var(--border);
+            font-size: .72rem;
+        }
+
+        .sub-grp-hdr .sgn {
+            color: var(--text);
+            font-weight: 700;
+            font-size: .78rem;
+        }
+
+        .sub-grp-hdr .sgc {
+            margin-left: auto;
+            color: var(--green);
+            font-weight: 700;
+            font-size: .82rem;
+        }
+
+        .sub-grp-hdr .sgm {
+            color: var(--muted);
+        }
+
+        .dtl-tbl {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .75rem;
+        }
+
+        .dtl-tbl thead th {
+            background: rgba(21, 31, 48, .8);
+            color: var(--muted);
+            padding: .48rem .9rem;
+            text-align: left;
+            font-size: .62rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dtl-tbl thead th.r {
+            text-align: right;
+        }
+
+        .dtl-tbl tbody td {
+            padding: .44rem .9rem;
+            border-bottom: 1px solid rgba(30, 45, 69, .5);
+        }
+
+        .dtl-tbl tbody td.r {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .dtl-tbl tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .dtl-tbl tfoot td {
+            background: rgba(21, 31, 48, .9);
+            font-weight: 700;
+            padding: .48rem .9rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .dtl-tbl tfoot td.r {
+            text-align: right;
+            color: var(--green);
+        }
+
+        /* ─ GRAND TOTAL ─ */
+        .grand {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            background: var(--surface);
+            border: 1px solid var(--primary);
+            border-radius: var(--radius);
+            padding: .9rem 1.4rem;
+            margin-top: 1.1rem;
+            box-shadow: var(--glow);
+        }
+
+        .gt .gtl {
+            font-size: .64rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .gt .gtv {
+            font-size: 1.05rem;
+            font-weight: 800;
+            margin-top: 1px;
+        }
+
+        /* ─ EMPTY ─ */
+        .empty-s {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-s .ei {
+            font-size: 3rem;
+            opacity: .3;
+            margin-bottom: .6rem;
+        }
+
+        .empty-s p {
+            color: var(--muted);
+            font-size: .9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="hdr">
+        <div class="hdr-brand">
+            <div class="hdr-icon">💰</div>
+            <div>
+                <h1>Brokerage Calculator</h1>
+                <p>Commission by Shop &amp; Miller</p>
+            </div>
+        </div>
+        <div class="hdr-right">
+            <button class="btn btn-ghost btn-sm" onclick="load()">↻ Refresh</button>
+            <button class="btn btn-ghost btn-sm" onclick="collapseAll()">⊟ Collapse</button>
+            <button class="btn btn-ghost btn-sm" onclick="expandAll()">⊞ Expand</button>
+            <button class="btn btn-danger btn-sm" onclick="clearRates()">🗑 Clear Rates</button>
+            <a href="index.html" class="btn btn-ghost btn-sm">← Records</a>
+        </div>
+    </header>
+
+    <!-- TABS -->
+    <div class="tabs-wrap">
+        <button class="tab-btn active" id="tab-shop" onclick="switchTab('shop')">🏪 By Shop</button>
+        <button class="tab-btn" id="tab-miller" onclick="switchTab('miller')">🏭 By Miller</button>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-strip" id="statsStrip"></div>
+
+    <!-- CONTROLS -->
+    <div class="ctrl-bar">
+        <input class="ctrl" type="text" id="searchBox" placeholder="🔍 Filter by name..." oninput="renderActive()"
+            style="min-width:200px" />
+        <select class="ctrl" id="filterArea" onchange="renderActive()" style="min-width:140px">
+            <option value="">All Areas</option>
+        </select>
+        <input class="ctrl" type="date" id="fFrom" onchange="renderActive()" title="From Date" />
+        <input class="ctrl" type="date" id="fTo" onchange="renderActive()" title="To Date" />
+    </div>
+
+    <!-- BY SHOP TAB -->
+    <div class="tab-content active" id="pane-shop"></div>
+
+    <!-- BY MILLER TAB -->
+    <div class="tab-content" id="pane-miller"></div>
+
+    <script type="module">
+        import { initFirebase, onAuthStateChanged, recordsCol, ratesDoc, onSnapshot, setDoc, query, orderBy } from './firebase.js';
+
+        const NIDHI = 'NIDHI AGROS';
+        let records = [], rateMap = {}, expandState = {}, activeTab = 'shop';
+        let _db, _uid, _ratesRef;
+
+        /* helpers */
+        const fmtN = n => { const v = parseFloat(n); return isNaN(v) ? '—' : v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+        const fmtQ = n => { const v = parseFloat(n); return (isNaN(v) || v === 0) ? '—' : v.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 3 }); };
+        const isNidhi = m => (m || '').trim().toUpperCase() === NIDHI.toUpperCase();
+        const shopKey = (s, m) => (s || '?') + '||' + (m || '?');
+        const esc = s => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const qs = s => s.replace(/'/g, "\\'");
+
+        function rowComm(r, overrideRate) {
+            if (isNidhi(r.millerName)) return (parseFloat(r.amount) || 0) * 0.01;
+            const rate = overrideRate !== undefined ? overrideRate : (parseFloat(rateMap[shopKey(r.shopName, r.millerName)]) || 0);
+            return (parseFloat(r.qty) || 0) * rate;
+        }
+        function millerRateKey(miller) { return 'M||' + miller; }
+        function millerComm(r, overrideMRate) {
+            if (isNidhi(r.millerName)) return (parseFloat(r.amount) || 0) * 0.01;
+            const rate = overrideMRate !== undefined ? overrideMRate : (parseFloat(rateMap[millerRateKey(r.millerName)]) || 0);
+            return (parseFloat(r.qty) || 0) * rate;
+        }
+
+        async function saveRates() {
+            if (_ratesRef) await setDoc(_ratesRef, { rates: rateMap }, { merge: true });
+        }
+
+        window.clearRates = function () {
+            if (!confirm('Clear all saved rates?')) return;
+            rateMap = {};
+            saveRates();
+            renderActive();
+        };
+
+        function populateArea() {
+            const sel = document.getElementById('filterArea');
+            const areas = [...new Set(records.map(r => r.area).filter(Boolean))].sort();
+            sel.innerHTML = '<option value="">All Areas</option>' + areas.map(a => `<option value="${esc(a)}">${esc(a)}</option>`).join('');
+        }
+
+        function renderStats() {
+            const totQty = records.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+            const totAmt = records.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+            const totCommS = records.reduce((s, r) => s + rowComm(r), 0);
+            const totCommM = records.reduce((s, r) => s + millerComm(r), 0);
+            const shops = [...new Set(records.map(r => r.shopName).filter(Boolean))].length;
+            const millers = [...new Set(records.map(r => r.millerName).filter(Boolean))].length;
+            document.getElementById('statsStrip').innerHTML = [
+                ['🏪', 'Shops', shops, '#60a5fa'],
+                ['🏭', 'Millers', millers, '#a78bfa'],
+                ['📦', 'Total QTY', fmtQ(totQty), '#60a5fa'],
+                ['💵', 'Total Amt', '₹' + fmtN(totAmt), '#fbbf24'],
+                ['💰', 'Shop Comm', '₹' + fmtN(totCommS), '#34d399'],
+                ['💎', 'Miller Comm', '₹' + fmtN(totCommM), '#a78bfa'],
+            ].map(([i, l, v, c]) => `
+    <div class="stat-pill">
+      <span class="icon">${i}</span>
+      <div><span class="lbl">${l}</span><span class="val" style="color:${c}">${v}</span></div>
+    </div>`).join('');
+        }
+
+        function getFiltered() {
+            const q = document.getElementById('searchBox').value.trim().toLowerCase();
+            const area = document.getElementById('filterArea').value;
+            const from = document.getElementById('fFrom').value;
+            const to = document.getElementById('fTo').value;
+            return records.filter(r => {
+                const hay = ((r.shopName || '') + ' ' + (r.millerName || '')).toLowerCase();
+                if (q && !hay.includes(q)) return false;
+                if (area && r.area !== area) return false;
+                if (from && r.date < from) return false;
+                if (to && r.date > to) return false;
+                return true;
+            });
+        }
+
+        window.switchTab = function (t) {
+            activeTab = t;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + t).classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(p => p.classList.remove('active'));
+            document.getElementById('pane-' + t).classList.add('active');
+            renderActive();
+        };
+
+        window.renderActive = function () {
+            renderStats();
+            if (activeTab === 'shop') renderShops(); else renderMillers();
+        };
+        window.load = renderActive;
+        window.expandAll = function () {
+            const list = getFiltered();
+            [...new Set(list.map(r => (r.shopName || 'Unknown').trim()))].forEach(s => expandState['S:' + s] = true);
+            [...new Set(list.map(r => (r.millerName || 'Unknown').trim()))].forEach(m => expandState['M:' + m] = true);
+            renderActive();
+        };
+        window.collapseAll = function () { expandState = {}; renderActive(); };
+        window.toggleEx = function (k) { expandState[k] = !expandState[k]; renderActive(); };
+        window.setShopRate = function (shop, miller, val) {
+            const key = shopKey(shop, miller);
+            const v = parseFloat(val);
+            if (!isNaN(v) && v >= 0) rateMap[key] = v; else delete rateMap[key];
+            saveRates(); renderActive();
+        };
+        window.setMillerRate = function (miller, val) {
+            const key = millerRateKey(miller);
+            const v = parseFloat(val);
+            if (!isNaN(v) && v >= 0) rateMap[key] = v; else delete rateMap[key];
+            saveRates(); renderActive();
+        };
+
+        /* ───── renderShops / renderMillers unchanged from original ───── */
+        function renderShops() {
+            const list = getFiltered();
+            const wrap = document.getElementById('pane-shop');
+            const map = {};
+            list.forEach(r => {
+                const s = (r.shopName || 'Unknown').trim();
+                const m = (r.millerName || 'Unknown').trim();
+                if (!map[s]) map[s] = {};
+                if (!map[s][m]) map[s][m] = [];
+                map[s][m].push(r);
+            });
+            const groups = Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+            if (!groups.length) { wrap.innerHTML = `<div class="empty-s"><div class="ei">🏪</div><p>No records found.</p></div>`; return; }
+            let grandComm = 0, grandQty = 0;
+            const colHdr = `<div class="col-labels shop-layout"><span>Shop Name</span><span>Millers</span><span class="cr">QTY</span><span>Rate (₹/bag)</span><span class="cr">Amount</span><span class="cr">Commission</span><span></span></div>`;
+            const cards = groups.map(([shop, millerMap], gi) => {
+                const millers = Object.entries(millerMap).sort(([a], [b]) => a.localeCompare(b)).map(([m, rows]) => ({ m, rows }));
+                const shopQty = millers.reduce((s, { rows }) => s + rows.reduce((ss, r) => ss + (parseFloat(r.qty) || 0), 0), 0);
+                const shopAmt = millers.reduce((s, { rows }) => s + rows.reduce((ss, r) => ss + (parseFloat(r.amount) || 0), 0), 0);
+                const shopComm = millers.reduce((s, { m, rows }) => { const rate = parseFloat(rateMap[shopKey(shop, m)]) || 0; return s + rows.reduce((ss, r) => ss + rowComm(r, rate), 0); }, 0);
+                grandComm += shopComm; grandQty += shopQty;
+                const isOpen = !!expandState['S:' + shop];
+                const millerSections = millers.map(({ m, rows }) => {
+                    const nidhi = isNidhi(m); const key = shopKey(shop, m);
+                    const rate = nidhi ? null : (parseFloat(rateMap[key]) || 0);
+                    const mQty = rows.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+                    const mAmt = rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+                    const mComm = rows.reduce((s, r) => s + rowComm(r, rate), 0);
+                    const dtlRows = rows.map(r => `<tr><td>${r.date || '—'}</td><td>${esc(r.billNo || '—')}</td><td>${esc(r.brand || '—')}</td><td class="r">${fmtQ(r.qty)}</td><td class="r">${fmtN(r.rate)}</td><td class="r">${fmtN(r.amount)}</td><td class="r" style="color:var(--green);font-weight:600">${fmtN(rowComm(r, rate))}</td></tr>`).join('');
+                    return `<div class="sub-grp-hdr"><span>🏭</span><span class="sgn">${esc(m)}${nidhi ? '<span class="tag nidhi-tag" style="margin-left:.4rem">🔒 1% of Amt</span>' : ''}</span><span class="sgm">${rows.length} bill${rows.length !== 1 ? 's' : ''} · QTY ${fmtQ(mQty)}</span><span class="sgc">₹${fmtN(mComm)}</span></div>
+                    <table class="dtl-tbl"><thead><tr><th>Date</th><th>Bill No</th><th>Brand</th><th class="r">QTY</th><th class="r">Rate</th><th class="r">Amount</th><th class="r">Commission</th></tr></thead><tbody>${dtlRows}</tbody><tfoot><tr><td colspan="3"><strong>Subtotal — ${esc(m)}</strong></td><td class="r">${fmtQ(mQty)}</td><td></td><td class="r">${fmtN(mAmt)}</td><td class="r">${fmtN(mComm)}</td></tr></tfoot></table>`;
+                }).join('');
+                let rateCell;
+                if (millers.length === 1) { const { m: fm } = millers[0]; const nidhi = isNidhi(fm); rateCell = nidhi ? `<span class="locked">🔒 1% of Amt</span>` : `<div class="rate-wrap"><input class="rate-inp" type="number" step="0.01" min="0" value="${parseFloat(rateMap[shopKey(shop, fm)]) || ''}" placeholder="0.00" onchange="setShopRate('${qs(shop)}','${qs(fm)}',this.value)"/><span class="rate-unit">₹/bag</span></div>`; }
+                else { rateCell = `<span style="font-size:.72rem;color:var(--muted)">Set ↓ per miller</span>`; }
+                return `<div class="grp-card${shopComm > 0 ? ' has-comm' : ''}">
+                  ${gi === 0 ? colHdr : ''}
+                  <div class="sum-row shop-layout">
+                    <div class="name-col"><div class="main-name">🏪 ${esc(shop)}</div><div class="sub">${millers.map(({ m }) => `<span class="tag${isNidhi(m) ? ' nidhi-tag' : ''}">${isNidhi(m) ? '🔒 NIDHI' : esc(m)}</span>`).join('')}</div></div>
+                    <div style="font-size:.75rem;color:var(--muted);align-self:center">${millers.length} miller${millers.length !== 1 ? 's' : ''} · ${millers.reduce((s, { rows }) => s + rows.length, 0)} bills</div>
+                    <div class="cr qty-val">${fmtQ(shopQty)}</div>
+                    <div>${rateCell}</div>
+                    <div class="cr amt-val">₹${fmtN(shopAmt)}</div>
+                    <div class="cr">${shopComm > 0 ? `<span class="comm-val">₹${fmtN(shopComm)}</span>` : `<span class="comm-zero">₹0.00</span>`}</div>
+                    <button class="exp-btn ${isOpen ? 'open' : ''}" onclick="toggleEx('S:${qs(shop)}')">${isOpen ? '▼ Collapse' : '▶ Details'}</button>
+                  </div>
+                  <div class="detail-sec ${isOpen ? 'open' : ''}">${millerSections}</div>
+                </div>`;
+            }).join('');
+            wrap.innerHTML = cards + `<div class="grand"><div class="gt"><div class="gtl">Total Shops</div><div class="gtv" style="color:var(--accent)">${groups.length}</div></div><div class="gt"><div class="gtl">Total QTY</div><div class="gtv" style="color:var(--accent)">${fmtQ(grandQty)}</div></div><div class="gt"><div class="gtl">Total Commission</div><div class="gtv" style="color:var(--green)">₹${fmtN(grandComm)}</div></div></div>`;
+        }
+
+        function renderMillers() {
+            const list = getFiltered();
+            const wrap = document.getElementById('pane-miller');
+            const map = {};
+            list.forEach(r => { const m = (r.millerName || 'Unknown').trim(); const s = (r.shopName || 'Unknown').trim(); if (!map[m]) map[m] = {}; if (!map[m][s]) map[m][s] = []; map[m][s].push(r); });
+            const groups = Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+            if (!groups.length) { wrap.innerHTML = `<div class="empty-s"><div class="ei">🏭</div><p>No records found.</p></div>`; return; }
+            let grandComm = 0, grandQty = 0;
+            const colHdr = `<div class="col-labels miller-layout"><span>Miller Name</span><span>Shops</span><span class="cr">QTY</span><span>Rate (₹/bag)</span><span class="cr">Amount</span><span class="cr">Commission</span><span></span></div>`;
+            const cards = groups.map(([miller, shopMap], gi) => {
+                const nidhi = isNidhi(miller); const mKey = millerRateKey(miller);
+                const mRate = nidhi ? null : (parseFloat(rateMap[mKey]) || 0);
+                const shops = Object.entries(shopMap).sort(([a], [b]) => a.localeCompare(b)).map(([s, rows]) => ({ s, rows }));
+                const milQty = shops.reduce((s, { rows }) => s + rows.reduce((ss, r) => ss + (parseFloat(r.qty) || 0), 0), 0);
+                const milAmt = shops.reduce((s, { rows }) => s + rows.reduce((ss, r) => ss + (parseFloat(r.amount) || 0), 0), 0);
+                const milComm = shops.reduce((s, { rows }) => s + rows.reduce((ss, r) => ss + millerComm(r, mRate), 0), 0);
+                grandComm += milComm; grandQty += milQty;
+                const isOpen = !!expandState['M:' + miller];
+                const shopSections = shops.map(({ s, rows }) => {
+                    const sQty = rows.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0); const sAmt = rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0); const sComm = rows.reduce((s, r) => s + millerComm(r, mRate), 0);
+                    const dtlRows = rows.map(r => `<tr><td>${r.date || '—'}</td><td>${esc(r.billNo || '—')}</td><td>${esc(r.brand || '—')}</td><td class="r">${fmtQ(r.qty)}</td><td class="r">${fmtN(r.rate)}</td><td class="r">${fmtN(r.amount)}</td><td class="r" style="color:var(--green);font-weight:600">${fmtN(millerComm(r, mRate))}</td></tr>`).join('');
+                    return `<div class="sub-grp-hdr"><span>🏪</span><span class="sgn">${esc(s)}</span><span class="sgm">${rows.length} bill${rows.length !== 1 ? 's' : ''} · QTY ${fmtQ(sQty)}</span><span class="sgc">₹${fmtN(sComm)}</span></div>
+                    <table class="dtl-tbl"><thead><tr><th>Date</th><th>Bill No</th><th>Brand</th><th class="r">QTY</th><th class="r">Rate</th><th class="r">Amount</th><th class="r">Commission</th></tr></thead><tbody>${dtlRows}</tbody><tfoot><tr><td colspan="3"><strong>Subtotal — ${esc(s)}</strong></td><td class="r">${fmtQ(sQty)}</td><td></td><td class="r">${fmtN(sAmt)}</td><td class="r">${fmtN(sComm)}</td></tr></tfoot></table>`;
+                }).join('');
+                const rateCell = nidhi ? `<span class="locked">🔒 1% of Amt</span>` : `<div class="rate-wrap"><input class="rate-inp" type="number" step="0.01" min="0" value="${mRate || ''}" placeholder="0.00" onchange="setMillerRate('${qs(miller)}',this.value)"/><span class="rate-unit">₹/bag</span></div>`;
+                return `<div class="grp-card${milComm > 0 ? ' has-comm' : ''}${nidhi ? ' is-nidhi' : ''}">
+                  ${gi === 0 ? colHdr : ''}
+                  <div class="sum-row miller-layout">
+                    <div class="name-col"><div class="main-name">🏭 ${esc(miller)}${nidhi ? '<span class="tag nidhi-tag" style="margin-left:.5rem">🔒 Special</span>' : ''}</div><div class="sub">${shops.map(({ s }) => `<span class="tag">${esc(s)}</span>`).join('')}</div></div>
+                    <div style="font-size:.75rem;color:var(--muted);align-self:center">${shops.length} shop${shops.length !== 1 ? 's' : ''} · ${shops.reduce((s, { rows }) => s + rows.length, 0)} bills</div>
+                    <div class="cr qty-val">${fmtQ(milQty)}</div>
+                    <div>${rateCell}</div>
+                    <div class="cr amt-val">₹${fmtN(milAmt)}</div>
+                    <div class="cr">${milComm > 0 ? `<span class="comm-val">₹${fmtN(milComm)}</span>` : `<span class="comm-zero">₹0.00</span>`}</div>
+                    <button class="exp-btn ${isOpen ? 'open' : ''}" onclick="toggleEx('M:${qs(miller)}')">${isOpen ? '▼ Collapse' : '▶ Details'}</button>
+                  </div>
+                  <div class="detail-sec ${isOpen ? 'open' : ''}">${shopSections}</div>
+                </div>`;
+            }).join('');
+            wrap.innerHTML = cards + `<div class="grand"><div class="gt"><div class="gtl">Total Millers</div><div class="gtv" style="color:var(--purple)">${groups.length}</div></div><div class="gt"><div class="gtl">Total QTY</div><div class="gtv" style="color:var(--accent)">${fmtQ(grandQty)}</div></div><div class="gt"><div class="gtl">Total Commission</div><div class="gtv" style="color:var(--green)">₹${fmtN(grandComm)}</div></div></div>`;
+        }
+
+        /* ── BOOT: connect to Firestore ── */
+        const { auth, db } = initFirebase();
+        onAuthStateChanged(auth, user => {
+            if (!user) { location.replace('./login.html'); return; }
+            _db = db; _uid = user.uid;
+            _ratesRef = ratesDoc(db, _uid);
+
+            // Load brokerage rates
+            onSnapshot(_ratesRef, snap => {
+                rateMap = (snap.exists() && snap.data().rates) ? snap.data().rates : {};
+                renderActive();
+            });
+
+            // Load records live
+            onSnapshot(query(recordsCol(db, _uid), orderBy('date', 'desc')), snap => {
+                records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                populateArea();
+                renderActive();
+            });
+        });
+    </script>
+</body>
+
+</html>
