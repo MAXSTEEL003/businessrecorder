@@ -520,6 +520,55 @@ function activateCell(td) {
   td.innerHTML = '';
   td.appendChild(input);
   
+  // ===== LIVE AUTO-CALCULATION =====
+  // Fields that trigger auto-calc: qty, rate, ccPct, lr, seller, chqAmt
+  const autoCalcTriggers = ['qty', 'rate', 'ccPct', 'lr', 'seller', 'chqAmt'];
+  if (autoCalcTriggers.includes(key)) {
+    input.addEventListener('input', () => {
+      // Update the local record with current input value
+      if (colDef.type === 'number') {
+        r[key] = input.value ? parseFloat(input.value) : '';
+      } else {
+        r[key] = input.value;
+      }
+      
+      // Re-calculate all derived fields
+      applyAutoCalc(r);
+      
+      // Update display of all auto-calculated cells in this row
+      const row = td.closest('tr');
+      const autoCells = row.querySelectorAll('td.auto-cell');
+      autoCells.forEach(cell => {
+        const cellKey = cell.dataset.key;
+        const cellColDef = COLS.find(c => c.key === cellKey);
+        if (!cellColDef) return;
+        
+        const newVal = r[cellKey];
+        let display;
+        
+        if (cellKey === 'status') {
+          display = statusBadge(newVal);
+        } else if (cellKey === 'noOfDays') {
+          if (!newVal) { display = '<span class="cell-empty">—</span>'; }
+          else if (newVal === 'Cleared') { display = `<span class="days-cleared">✅ Cleared</span>`; }
+          else {
+            const days = parseInt(newVal);
+            const cls = days > 30 ? 'days-red' : 'days-yellow';
+            display = `<span class="${cls}">${escHtml(newVal)}</span>`;
+          }
+        } else if (cellKey === 'noOfDayRec') {
+          display = newVal ? `<span class="${newVal === 'PAYMENT NOT RECD' ? 'days-notrecd' : 'days-cleared'}">${escHtml(newVal)}</span>` : '<span class="cell-empty">—</span>';
+        } else if (cellColDef.align === 'right') {
+          display = fmt(newVal) || '<span class="cell-empty">—</span>';
+        } else {
+          display = newVal ? escHtml(String(newVal)) : '<span class="cell-empty">—</span>';
+        }
+        
+        cell.innerHTML = display;
+      });
+    });
+  }
+  
   // Aggressive focus and selection - multiple approaches to ensure focus
   input.focus();
   input.click(); // Ensure the element can receive events
