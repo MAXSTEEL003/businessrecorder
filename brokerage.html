@@ -962,25 +962,36 @@
         }
 
         /* ── BOOT: connect to Firestore ── */
-        const { auth, db } = initFirebase();
-        onAuthStateChanged(auth, user => {
-            if (!user) { location.replace('./login.html'); return; }
-            _db = db; _uid = user.uid;
-            _ratesRef = ratesDoc(db, _uid);
+        (async () => {
+            try {
+                const { auth, db } = await initFirebase();
+                if (!auth || !db) {
+                    document.body.innerHTML = '<div style="padding: 2rem; text-align: center; color: red;">Firebase not configured. Please set up environment variables.</div>';
+                    return;
+                }
+                onAuthStateChanged(auth, user => {
+                    if (!user) { location.replace('./login.html'); return; }
+                    _db = db; _uid = user.uid;
+                    _ratesRef = ratesDoc(db, _uid);
 
-            // Load brokerage rates
-            onSnapshot(_ratesRef, snap => {
-                rateMap = (snap.exists() && snap.data().rates) ? snap.data().rates : {};
-                renderActive();
-            });
+                    // Load brokerage rates
+                    onSnapshot(_ratesRef, snap => {
+                        rateMap = (snap.exists() && snap.data().rates) ? snap.data().rates : {};
+                        renderActive();
+                    });
 
-            // Load records live
-            onSnapshot(query(recordsCol(db, _uid), orderBy('date', 'desc')), snap => {
-                records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                populateArea();
-                renderActive();
-            });
-        });
+                    // Load records live
+                    onSnapshot(query(recordsCol(db, _uid), orderBy('date', 'desc')), snap => {
+                        records = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        populateArea();
+                        renderActive();
+                    });
+                });
+            } catch (err) {
+                console.error('Firebase initialization error:', err);
+                document.body.innerHTML = '<div style="padding: 2rem; text-align: center; color: red;">Firebase initialization failed. Please refresh.</div>';
+            }
+        })();
     </script>
 </body>
 

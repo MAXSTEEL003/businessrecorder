@@ -545,14 +545,28 @@
         }));
 
         // Boot: connect to Firestore
-        const { auth, db } = initFirebase();
-        onAuthStateChanged(auth, user => {
-            if (!user) { location.replace('./login.html'); return; }
-            onSnapshot(query(recordsCol(db, user.uid), orderBy('date', 'desc')), snap => {
-                allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                render(allRecords);
-            });
-        });
+        (async () => {
+            try {
+                const { auth, db } = await initFirebase();
+                if (!auth || !db) {
+                    document.body.innerHTML = '<div style="padding: 2rem; text-align: center; color: red;">Firebase not configured. Please set up environment variables.</div>';
+                    return;
+                }
+                onAuthStateChanged(auth, user => {
+                    if (!user) { location.replace('./login.html'); return; }
+                    onSnapshot(query(recordsCol(db, user.uid), orderBy('date', 'desc')), snap => {
+                        allRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        render(allRecords);
+                    }, error => {
+                        console.error('Firestore error:', error);
+                        document.body.innerHTML = '<div style="padding: 2rem; text-align: center; color: red;">Error loading records. Please check Firestore configuration.</div>';
+                    });
+                });
+            } catch (err) {
+                console.error('Firebase initialization error:', err);
+                document.body.innerHTML = '<div style="padding: 2rem; text-align: center; color: red;">Firebase initialization failed. Please refresh.</div>';
+            }
+        })();
     </script>
 </body>
 

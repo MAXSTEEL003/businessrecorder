@@ -11,8 +11,8 @@ import {
 // ─── Firebase state ───
 let _db = null, _uid = null, _unsubRecords = null;
 
-function initApp() {
-  const { auth, db } = initFirebase();
+async function initApp() {
+  const { auth, db } = await initFirebase();
   _db = db;
 
   // Check if Firebase is properly configured
@@ -61,7 +61,7 @@ function initApp() {
     document.querySelectorAll('[data-action=logout]').forEach(btn =>
       btn.addEventListener('click', () => signOut(auth).then(() => location.replace('./login.html'))));
 
-    // Real-time listener
+    // Real-time listener with error handling
     if (_unsubRecords) _unsubRecords();
     const col = recordsCol(db, _uid);
     _unsubRecords = onSnapshot(query(col, orderBy('date', 'desc')), snap => {
@@ -71,6 +71,14 @@ function initApp() {
       if (!activeCell) {
         renderTable();
         updateStats();
+      }
+    }, error => {
+      // Handle Firestore errors gracefully
+      console.error('Firestore error:', error);
+      if (error.code === 'permission-denied') {
+        showToast('Please initialize your database first. Go to init-db.html', 'warn');
+      } else {
+        showToast('Error loading records: ' + error.message, 'error');
       }
     });
 
@@ -92,7 +100,10 @@ function initApp() {
   });
 }
 
-initApp();
+initApp().catch(err => {
+  console.error('Failed to initialize app:', err);
+  showToast('Failed to initialize app. Please refresh the page.', 'error');
+});
 
 // ─────────────────────────────────────────────
 // COLUMN DEFINITIONS

@@ -46,7 +46,7 @@ const config = {
 /* ── Singleton init ── */
 let _app, _auth, _db, _analytics;
 
-export function initFirebase() {
+export async function initFirebase() {
     if (_app) return { auth: _auth, db: _db, analytics: _analytics };
     
     // Check if Firebase is configured
