@@ -99,6 +99,43 @@ service cloud.firestore {
 }
 ```
 
+## 🔐 Security & Why Firebase API Keys in Browser are Safe
+
+### Why This Isn't a Vulnerability
+
+**Vite will show a warning** about exposing `VITE_FIREBASE_*` variables in the browser. **This is safe and expected for Firebase:**
+
+1. **Firebase API keys are NOT secrets** - they're public by design
+2. **Security Rules** (not API keys) protect your data
+3. Anyone can see your API key, but only authenticated users with the correct `uid` can access their data
+4. The real protection comes from Firestore rules like this:
+   ```javascript
+   allow read, write: if request.auth != null && request.auth.uid == userId;
+   ```
+   This rule says: "Only allow access if the user is authenticated AND their user ID matches the document path"
+
+### Best Practices Used Here
+
+✅ **What we do right:**
+- Firebase credentials are exposed in the browser (this is correct for Firebase)
+- `.gitignore` prevents committing sensitive files
+- Vercel environment variables are never hardcoded
+- Firestore Security Rules enforce user isolation
+- Authentication is required for all operations
+
+❌ **What would be wrong:**
+- Using Firebase Admin SDK in the browser (backend-only)
+- Hardcoding credentials in git
+- Weak or missing Firestore Security Rules
+- No authentication requirement
+
+### Additional Security Tips
+
+1. **Keep Firestore Rules strict** (as shown above)
+2. **Use Cloud Functions** for sensitive operations (server-side only)
+3. **Enable Firebase Authentication** (required before using the app)
+4. **Monitor Firestore for suspicious activity** in Firebase Console
+
 ## Keyboard Shortcuts
 
 | Key | Action |
