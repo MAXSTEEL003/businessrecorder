@@ -32,16 +32,7 @@ import {
     query, orderBy
 } from 'firebase/firestore';
 
-// Firebase config from environment variables (Vite exposes VITE_* vars)
-// For local development, create firebase-config.json or .env.local with:
-// VITE_FIREBASE_API_KEY=...
-// VITE_FIREBASE_AUTH_DOMAIN=...
-// VITE_FIREBASE_PROJECT_ID=...
-// VITE_FIREBASE_STORAGE_BUCKET=...
-// VITE_FIREBASE_MESSAGING_SENDER_ID=...
-// VITE_FIREBASE_APP_ID=...
-// VITE_FIREBASE_MEASUREMENT_ID=... (optional)
-
+// Firebase config from environment variables (Vite exposes VITE_* vars automatically from .env.local)
 const config = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -58,9 +49,49 @@ let _app, _auth, _db, _analytics;
 export function initFirebase() {
     if (_app) return { auth: _auth, db: _db, analytics: _analytics };
     
+    // Check if Firebase is configured
     if (!config.apiKey) {
-        console.error('Firebase config missing! Set environment variables VITE_FIREBASE_*');
-        throw new Error('Firebase configuration not found');
+        const setupGuide = `
+╔════════════════════════════════════════════════════════════════╗
+║           Firebase Configuration Required                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+📍 FOR LOCAL DEVELOPMENT:
+   1. Create a .env.local file in the project root
+   2. Copy from .env.example:
+      cp .env.example .env.local
+   3. Fill in your Firebase credentials from:
+      Firebase Console → Project Settings → Your Apps
+   4. Restart your development server (npm run dev)
+
+📍 FOR VERCEL DEPLOYMENT:
+   1. Go to https://vercel.com/dashboard
+   2. Select your project → Settings → Environment Variables
+   3. Add these 7 variables:
+      VITE_FIREBASE_API_KEY          (from Firebase Project Settings)
+      VITE_FIREBASE_AUTH_DOMAIN      (e.g., your-project.firebaseapp.com)
+      VITE_FIREBASE_PROJECT_ID       (from Firebase Project Settings)
+      VITE_FIREBASE_STORAGE_BUCKET   (from Firebase Project Settings)
+      VITE_FIREBASE_MESSAGING_SENDER_ID
+      VITE_FIREBASE_APP_ID
+      VITE_FIREBASE_MEASUREMENT_ID   (optional - Analytics ID)
+   4. Click "Save" then "Redeploy"
+
+📍 HOW TO GET FIREBASE CREDENTIALS:
+   1. Go to https://console.firebase.google.com
+   2. Select your project
+   3. Click ⚙️ (Settings) → Project Settings
+   4. Scroll to "Your Apps" section
+   5. Copy the config object
+
+🔗 Need help? See README.md for detailed setup instructions
+`;
+        
+        console.error(setupGuide);
+        console.warn('⚠️ Firebase is not configured. App will not work until configured.');
+        
+        // Return empty object so app doesn't crash, but features will fail gracefully
+        return { auth: null, db: null, analytics: null };
     }
 
     _app = initializeApp(config);

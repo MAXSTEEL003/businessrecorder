@@ -15,6 +15,44 @@ function initApp() {
   const { auth, db } = initFirebase();
   _db = db;
 
+  // Check if Firebase is properly configured
+  if (!db) {
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = `
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      z-index: 10000; font-family: system-ui;
+    `;
+    errorDiv.innerHTML = `
+      <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 600px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+        <h2 style="color: #dc2626; margin-top: 0;">Firebase Not Configured ⚠️</h2>
+        <p style="color: #666; font-size: 14px; line-height: 1.6;">
+          Firebase environment variables are not set. The app cannot function without them.
+        </p>
+        <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: left; font-size: 13px; margin: 1rem 0; color: #374151;">
+          <strong>🚀 Quick Setup (Vercel):</strong><br>
+          1. Go to <a href="https://vercel.com/dashboard" target="_blank" style="color: #0066cc;">Vercel Dashboard</a><br>
+          2. Project Settings → Environment Variables<br>
+          3. Add <strong>VITE_FIREBASE_*</strong> variables from Firebase Console<br>
+          4. Click Redeploy
+        </div>
+        <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: left; font-size: 13px; color: #374151;">
+          <strong>💻 Local Development:</strong><br>
+          1. Create <code style="background: #e5e7eb; padding: 0.2rem 0.4rem; border-radius: 4px;">.env.local</code><br>
+          2. Copy from <code style="background: #e5e7eb; padding: 0.2rem 0.4rem; border-radius: 4px;">.env.example</code><br>
+          3. Restart: <code style="background: #e5e7eb; padding: 0.2rem 0.4rem; border-radius: 4px;">npm run dev</code>
+        </div>
+        <p style="color: #999; font-size: 12px; margin-bottom: 0;">
+          <a href="https://github.com/MAXSTEEL003/businessrecorder#setup" target="_blank" style="color: #0066cc;">View full setup guide</a>
+        </p>
+      </div>
+    `;
+    document.body.innerHTML = '';
+    document.body.appendChild(errorDiv);
+    return;
+  }
+
   onAuthStateChanged(auth, user => {
     if (!user) { location.replace('./login.html'); return; }
     _uid = user.uid;

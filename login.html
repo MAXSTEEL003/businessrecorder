@@ -270,7 +270,41 @@
     <script type="module">
         import { initFirebase, signInWithEmailAndPassword, onAuthStateChanged } from './firebase.js';
 
-        const { auth } = initFirebase();
+        const fbResult = initFirebase();
+        const { auth } = fbResult;
+
+        // Check if Firebase initialization failed
+        if (!auth) {
+            document.body.innerHTML = `
+              <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1f2937 0%, #111827 100%); z-index: 10000; font-family: system-ui;">
+                <div style="background: white; padding: 2rem; border-radius: 12px; max-width: 600px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                  <h2 style="color: #dc2626; margin-top: 0;">⚙️ Configuration Required</h2>
+                  <p style="color: #666; font-size: 14px; line-height: 1.6;">Firebase environment variables are not set. Please configure them:</p>
+                  <div style="background: #f3f4f6; padding: 1.5rem; border-radius: 8px; text-align: left; font-size: 13px; margin: 1.5rem 0; color: #374151;">
+                    <strong style="color: #1f2937;">🚀 For Vercel Deployment:</strong><br><br>
+                    1. Go to <a href="https://vercel.com/dashboard" target="_blank" style="color: #0066cc; text-decoration: none; font-weight: 500;">Vercel Dashboard</a><br>
+                    2. Select your project → click <strong>Settings</strong><br>
+                    3. Go to <strong>Environment Variables</strong><br>
+                    4. Add these 7 variables (from Firebase Console → Project Settings):<br>
+                    <code style="display: block; background: white; padding: 0.8rem; border-radius: 4px; margin-top: 0.5rem; border: 1px solid #e5e7eb; font-family: monospace; font-size: 12px;">
+VITE_FIREBASE_API_KEY<br>
+VITE_FIREBASE_AUTH_DOMAIN<br>
+VITE_FIREBASE_PROJECT_ID<br>
+VITE_FIREBASE_STORAGE_BUCKET<br>
+VITE_FIREBASE_MESSAGING_SENDER_ID<br>
+VITE_FIREBASE_APP_ID<br>
+VITE_FIREBASE_MEASUREMENT_ID
+                    </code><br>
+                    5. Click <strong>Save</strong> → <strong>Redeploy</strong> your project
+                  </div>
+                  <p style="color: #666; font-size: 13px;">
+                    <a href="https://github.com/MAXSTEEL003/businessrecorder#vercel-deployment" target="_blank" style="color: #0066cc; text-decoration: none;">📖 View detailed setup guide</a>
+                  </p>
+                </div>
+              </div>
+            `;
+            throw new Error('Firebase not configured');
+        }
 
         // If already signed in → redirect
         onAuthStateChanged(auth, user => {
