@@ -32,14 +32,36 @@ import {
     query, orderBy
 } from 'firebase/firestore';
 
-// Config loaded from firebase-config.json (git-ignored)
-import config from './firebase-config.json';
+// Firebase config from environment variables (Vite exposes VITE_* vars)
+// For local development, create firebase-config.json or .env.local with:
+// VITE_FIREBASE_API_KEY=...
+// VITE_FIREBASE_AUTH_DOMAIN=...
+// VITE_FIREBASE_PROJECT_ID=...
+// VITE_FIREBASE_STORAGE_BUCKET=...
+// VITE_FIREBASE_MESSAGING_SENDER_ID=...
+// VITE_FIREBASE_APP_ID=...
+// VITE_FIREBASE_MEASUREMENT_ID=... (optional)
+
+const config = {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
+};
 
 /* ── Singleton init ── */
 let _app, _auth, _db, _analytics;
 
 export function initFirebase() {
     if (_app) return { auth: _auth, db: _db, analytics: _analytics };
+    
+    if (!config.apiKey) {
+        console.error('Firebase config missing! Set environment variables VITE_FIREBASE_*');
+        throw new Error('Firebase configuration not found');
+    }
 
     _app = initializeApp(config);
     _auth = getAuth(_app);
