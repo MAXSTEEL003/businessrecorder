@@ -223,11 +223,10 @@ function applyAutoCalc(r) {
     r.cc = amt ? (amt * pct / 100).toFixed(2) : '';
   }
 
-  // 3. Net Amt = Amount − L.R − C.C − Seller Commission
+  // 3. Net Amt = Amount − L.R − Seller Commission
   const lr = parseFloat(r.lr) || 0;
-  const cc = parseFloat(r.cc) || 0;
   const seller = parseFloat(r.seller) || 0;
-  r.netAmt = amt ? (amt - lr - cc - seller).toFixed(2) : '';
+  r.netAmt = amt ? (amt - lr - seller).toFixed(2) : '';
 
   // 4. Diff. in = Chq Amount − Net Amount  (auto)
   const netAmt = parseFloat(r.netAmt) || 0;
@@ -588,12 +587,16 @@ function activateCell(td) {
       return;
     }
     
-    // For all other keys, commit first, then navigate
+    // For arrow keys: commit and navigate immediately (Excel-like)
+    // For Enter/Tab: commit and navigate with proper timing
     const oldTd = td;
+    const isArrowKey = ['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key);
+    
     commitCell(td, id, key);
     hideAutocomplete();
     
-    // Delay navigation to give commitCell time to complete
+    // Navigate - instant for arrow keys, delayed for Enter/Tab to respect async saves
+    const delay = isArrowKey ? 0 : 100;
     setTimeout(() => {
       if (e.key === 'Enter') {
         if (e.shiftKey) {
@@ -626,7 +629,7 @@ function activateCell(td) {
         const cells = [...oldTd.closest('tr').querySelectorAll('td.editable-cell')];
         if (cells.length > 0) activateCell(cells[cells.length - 1]);
       }
-    }, 120);  // 120ms gives Firebase and DOM time to update
+    }, delay);
   });  // NO capture phase - let normal event flow handle it
 }
 
