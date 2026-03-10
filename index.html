@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Business Records Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <!-- html2canvas for Patti image generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- SheetJS for Excel import/export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+
+<body>
+
+    <!-- ===== HEADER ===== -->
+    <header class="app-header">
+        <div class="header-inner">
+            <div class="brand">
+                <div class="brand-icon">📊</div>
+                <div>
+                    <h1>Business Records Manager</h1>
+                    <p class="tagline">Track payments, bills &amp; miller transactions</p>
+                </div>
+            </div>
+            <div class="header-nav">
+                <a href="print.html" class="btn btn-ghost" target="_blank">🖨 Print/PDF</a>
+                <a href="brokerage.html" class="btn btn-ghost" target="_blank">💰 Brokerage</a>
+            </div>
+            <div class="header-actions">
+                <button id="btnImport" class="btn btn-ghost" title="Import Excel (.xlsx)">⬆ Import</button>
+                <button id="btnExport" class="btn btn-ghost" title="Export Excel (.xlsx)">⬇ Export</button>
+                <button id="btnDeleteAll" class="btn btn-ghost" title="Delete all entries"
+                    style="color:var(--danger);border-color:rgba(248,113,113,.3);">🗑 Delete All</button>
+                <button id="btnAddRow" class="btn btn-primary">＋ New Row</button>
+                <button data-action="logout" class="btn btn-ghost" title="Logout"
+                    style="color:var(--danger);border-color:rgba(248,113,113,.3);">⏻ Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===== STATS BAR ===== -->
+    <section class="stats-bar">
+        <div class="stat-card">
+            <span class="stat-label">Total Records</span>
+            <span class="stat-value" id="statTotal">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Pending Payments</span>
+            <span class="stat-value pending" id="statPending">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Cleared</span>
+            <span class="stat-value cleared" id="statCleared">0</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Total Amount (₹)</span>
+            <span class="stat-value amount" id="statAmount">0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Total Net Amt (₹)</span>
+            <span class="stat-value amount" id="statNet">0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Pending Amt (₹)</span>
+            <span class="stat-value" style="color:#f85149" id="statPendAmt">0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Avg Pending Days</span>
+            <span class="stat-value" style="color:#d29922" id="statAvgDays">0 days</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Total Commission (₹)</span>
+            <span class="stat-value" style="color:#a78bfa" id="statComm">0.00</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Total Chq Amt (₹)</span>
+            <span class="stat-value" style="color:#38bdf8" id="statChq">0.00</span>
+        </div>
+    </section>
+
+    <!-- ===== FILTER BAR ===== -->
+    <section class="filter-bar">
+        <input type="text" id="searchBox" class="filter-input"
+            placeholder="🔍 Search by miller, brand, shop, area..." />
+        <select id="filterStatus" class="filter-select">
+            <option value="">All Statuses</option>
+            <option value="Cleared">Cleared</option>
+            <option value="PAYMENT NOT RECD">Payment Not Recd</option>
+            <option value="PENDING">Pending (any)</option>
+        </select>
+        <input type="date" id="filterFrom" class="filter-input small-filter" title="From Date" />
+        <input type="date" id="filterTo" class="filter-input small-filter" title="To Date" />
+        <button id="btnClearFilter" class="btn btn-ghost">✕ Clear</button>
+    </section>
+
+    <!-- ===== KEYBOARD HINTS ===== -->
+    <div class="kb-hint">
+        <strong>Excel-like Navigation:</strong>
+        <kbd>Enter</kbd> / <kbd>Tab</kbd> / <kbd>→</kbd> next cell &nbsp;|&nbsp;
+        <kbd>Shift+Enter</kbd> / <kbd>Shift+Tab</kbd> / <kbd>↓</kbd> / <kbd>↑</kbd> navigate &nbsp;|&nbsp;
+        <kbd>←</kbd> prev cell &nbsp;|&nbsp;
+        <kbd>Home</kbd> / <kbd>End</kbd> row start/end &nbsp;|&nbsp;
+        <kbd>Esc</kbd> cancel &nbsp;|&nbsp;
+        ⚡ = auto-calculated &nbsp;|&nbsp;
+        ＋ = insert row
+    </div>
+
+    <!-- ===== TABLE WRAPPER ===== -->
+    <div class="table-wrapper">
+        <table id="recordsTable">
+            <thead>
+                <tr>
+                    <th class="col-actions sticky-col">Actions</th>
+                    <th class="sortable" data-col="date">Date ↕</th>
+                    <th class="sortable" data-col="millerName">Miller Name ↕</th>
+                    <th>Place</th>
+                    <th>Brand</th>
+                    <th>Shop Name</th>
+                    <th>No of Days</th>
+                    <th>No of Day Rec</th>
+                    <th>Area</th>
+                    <th>Bill No</th>
+                    <th class="num-col">QTY</th>
+                    <th class="num-col">Rate</th>
+                    <th class="num-col">Amount</th>
+                    <th>L.R.</th>
+                    <th>C.C.</th>
+                    <th class="num-col">TDS</th>
+                    <th class="num-col">Shortage</th>
+                    <th>Seller</th>
+                    <th class="num-col">Diff. in</th>
+                    <th class="num-col">Net Amt</th>
+                    <th class="num-col">Chq Amt</th>
+                    <th>Chq No.</th>
+                    <th>Payment Date</th>
+                    <th>Bank</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Rows injected by JS -->
+            </tbody>
+        </table>
+        <div id="emptyState" class="empty-state">
+            <div class="empty-icon">📋</div>
+            <p>No records found. Click <strong>+ Add Record</strong> to get started.</p>
+        </div>
+    </div>
+
+    <!-- ===== MODAL OVERLAY ===== -->
+    <div id="modalOverlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Record</h2>
+                <button id="btnCloseModal" class="modal-close">✕</button>
+            </div>
+            <form id="recordForm" class="modal-form" autocomplete="off">
+                <div class="form-grid">
+
+                    <!-- Row 1 -->
+                    <div class="form-group">
+                        <label for="f_date">Date *</label>
+                        <input type="date" id="f_date" name="date" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_millerName">Miller Name *</label>
+                        <input type="text" id="f_millerName" name="millerName" placeholder="e.g. MAHENDRA RICE INDUSTRY"
+                            required />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_place">Place</label>
+                        <input type="text" id="f_place" name="place" placeholder="e.g. MIRYALGUDA" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_brand">Brand</label>
+                        <input type="text" id="f_brand" name="brand" placeholder="e.g. KOLAM RST" />
+                    </div>
+
+                    <!-- Row 2 -->
+                    <div class="form-group">
+                        <label for="f_shopName">Shop Name</label>
+                        <input type="text" id="f_shopName" name="shopName" placeholder="e.g. HANUMAN TRADING CO" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_noOfDays">No of Days</label>
+                        <input type="text" id="f_noOfDays" name="noOfDays" placeholder="e.g. 21 DAYS PENDING" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_noOfDayRec">No of Day Rec</label>
+                        <input type="text" id="f_noOfDayRec" name="noOfDayRec" placeholder="e.g. PAYMENT NOT RECD" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_area">Area</label>
+                        <input type="text" id="f_area" name="area" placeholder="e.g. BTH" />
+                    </div>
+
+                    <!-- Row 3 -->
+                    <div class="form-group">
+                        <label for="f_billNo">Bill No</label>
+                        <input type="text" id="f_billNo" name="billNo" placeholder="e.g. 3650" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_qty">QTY</label>
+                        <input type="number" id="f_qty" name="qty" step="0.01" placeholder="0.00"
+                            oninput="calcAmount()" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_rate">Rate</label>
+                        <input type="number" id="f_rate" name="rate" step="0.01" placeholder="0.00"
+                            oninput="calcAmount()" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_amount">Amount (auto)</label>
+                        <input type="number" id="f_amount" name="amount" step="0.01" placeholder="0.00" readonly
+                            class="readonly-field" />
+                    </div>
+
+                    <!-- Row 4 -->
+                    <div class="form-group">
+                        <label for="f_lr">L.R.</label>
+                        <input type="text" id="f_lr" name="lr" placeholder="L.R. number" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_cc">C.C.</label>
+                        <input type="text" id="f_cc" name="cc" placeholder="C.C." />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_tds">TDS</label>
+                        <input type="number" id="f_tds" name="tds" step="0.01" placeholder="0.00"
+                            oninput="calcNetAmt()" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_shortage">Shortage</label>
+                        <input type="number" id="f_shortage" name="shortage" step="0.01" placeholder="0.00"
+                            oninput="calcNetAmt()" />
+                    </div>
+
+                    <!-- Row 5 -->
+                    <div class="form-group">
+                        <label for="f_seller">Seller</label>
+                        <input type="text" id="f_seller" name="seller" placeholder="Seller name" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_diffIn">Diff. in</label>
+                        <input type="number" id="f_diffIn" name="diffIn" step="0.01" placeholder="0.00"
+                            oninput="calcNetAmt()" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_netAmt">Net Amt (auto)</label>
+                        <input type="number" id="f_netAmt" name="netAmt" step="0.01" placeholder="0.00" readonly
+                            class="readonly-field" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_chqAmt">Chq Amt</label>
+                        <input type="number" id="f_chqAmt" name="chqAmt" step="0.01" placeholder="0.00" />
+                    </div>
+
+                    <!-- Row 6 -->
+                    <div class="form-group">
+                        <label for="f_chqNo">Chq No.</label>
+                        <input type="text" id="f_chqNo" name="chqNo" placeholder="Cheque number" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_paymentDate">Payment Date</label>
+                        <input type="date" id="f_paymentDate" name="paymentDate" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_bank">Bank</label>
+                        <input type="text" id="f_bank" name="bank" placeholder="e.g. SBI, HDFC" />
+                    </div>
+                    <div class="form-group">
+                        <label for="f_status">Status *</label>
+                        <select id="f_status" name="status" required>
+                            <option value="">-- Select --</option>
+                            <option value="21 DAYS PENDING">21 Days Pending</option>
+                            <option value="Cleared">Cleared</option>
+                            <option value="PAYMENT NOT RECD">Payment Not Recd</option>
+                        </select>
+                    </div>
+
+                </div><!-- /form-grid -->
+
+                <div class="modal-footer">
+                    <button type="button" id="btnCancelForm" class="btn btn-ghost">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmitForm">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== DELETE CONFIRM ===== -->
+    <div id="deleteOverlay" class="modal-overlay hidden">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2>Delete Record?</h2>
+                <button id="btnCloseDelete" class="modal-close">✕</button>
+            </div>
+            <p style="padding:1rem 1.5rem;color:var(--text-muted)">This action cannot be undone.</p>
+            <div class="modal-footer">
+                <button id="btnCancelDelete" class="btn btn-ghost">Cancel</button>
+                <button id="btnConfirmDelete" class="btn btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- ===== PATTI PREVIEW MODAL ===== -->
+    <div id="pattiModal" class="patti-modal-overlay hidden" onclick="closePattiModal(event)">
+        <div class="patti-modal-container">
+            <!-- Modal Header -->
+            <div class="patti-modal-header">
+                <div class="patti-modal-title">
+                    <span class="patti-modal-icon">🧾</span>
+                    <span>Patti Note Preview</span>
+                </div>
+                <button class="patti-modal-close" onclick="closePattiModal()" title="Close">✕</button>
+            </div>
+
+            <!-- The actual Note (this gets captured by html2canvas) -->
+            <div class="patti-note-wrapper">
+                <div id="pattiNote" class="patti-note">
+                    <!-- Watermark / brand -->
+                    <div class="pn-brand">BUSINESS RECORDS MANAGER</div>
+
+                    <!-- Header: Miller & Shop -->
+                    <div class="pn-header">
+                        <div class="pn-party">
+                            <div class="pn-party-label">MILLER</div>
+                            <div class="pn-party-name" id="patti_miller">—</div>
+                        </div>
+                        <div class="pn-divider"></div>
+                        <div class="pn-party">
+                            <div class="pn-party-label">PARTY / SHOP</div>
+                            <div class="pn-party-name" id="patti_shop">—</div>
+                        </div>
+                    </div>
+
+                    <!-- Meta row: Date, Bill No, Area, Brand, Place -->
+                    <div class="pn-meta">
+                        <div class="pn-meta-item">
+                            <span class="pn-meta-label">Date</span>
+                            <span class="pn-meta-val" id="patti_date">—</span>
+                        </div>
+                        <div class="pn-meta-item">
+                            <span class="pn-meta-label">Bill No</span>
+                            <span class="pn-meta-val" id="patti_billno">—</span>
+                        </div>
+                        <div class="pn-meta-item">
+                            <span class="pn-meta-label">Area</span>
+                            <span class="pn-meta-val" id="patti_area">—</span>
+                        </div>
+                        <div class="pn-meta-item">
+                            <span class="pn-meta-label">Brand</span>
+                            <span class="pn-meta-val" id="patti_brand">—</span>
+                        </div>
+                        <div class="pn-meta-item">
+                            <span class="pn-meta-label">Place</span>
+                            <span class="pn-meta-val" id="patti_place">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Main Amounts Grid -->
+                    <table class="pn-table">
+                        <thead>
+                            <tr>
+                                <th>QTY</th>
+                                <th>Rate (₹)</th>
+                                <th>Amount (₹)</th>
+                                <th>L.R. (₹)</th>
+                                <th>TDS (₹)</th>
+                                <th>Shortage (₹)</th>
+                                <th>Seller Com (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="patti_qty">—</td>
+                                <td id="patti_rate">—</td>
+                                <td id="patti_amount">—</td>
+                                <td id="patti_lr">—</td>
+                                <td id="patti_tds">—</td>
+                                <td id="patti_shortage">—</td>
+                                <td id="patti_seller">—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Net Amount (large) -->
+                    <div class="pn-total">
+                        <span class="pn-total-label">NET AMOUNT</span>
+                        <span class="pn-total-val">₹ <span id="patti_netamt">0.00</span></span>
+                    </div>
+
+                    <!-- Payment Info -->
+                    <div class="pn-payment">
+                        <div class="pn-pay-item">
+                            <span class="pn-pay-label">Status</span>
+                            <span class="pn-pay-val" id="patti_status">—</span>
+                        </div>
+                        <div class="pn-pay-item">
+                            <span class="pn-pay-label">Chq Amount</span>
+                            <span class="pn-pay-val" id="patti_chqamt">—</span>
+                        </div>
+                        <div class="pn-pay-item">
+                            <span class="pn-pay-label">Chq No.</span>
+                            <span class="pn-pay-val" id="patti_chqno">—</span>
+                        </div>
+                        <div class="pn-pay-item">
+                            <span class="pn-pay-label">Payment Date</span>
+                            <span class="pn-pay-val" id="patti_paydate">—</span>
+                        </div>
+                        <div class="pn-pay-item">
+                            <span class="pn-pay-label">Bank</span>
+                            <span class="pn-pay-val" id="patti_bank">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="pn-footer">
+                        Generated on: <span id="patti_generated">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="patti-actions">
+                <button class="patti-act-btn patti-act-download" id="btnPattiDownload" onclick="downloadPattiPng()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zm-8 2V5h2v6h1.17L12 13.17 9.83 11H11zm-6 7h14v2H5z" />
+                    </svg>
+                    Download PNG
+                </button>
+                <button class="patti-act-btn patti-act-copy" id="btnPattiCopy" onclick="copyPattiImage()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                    </svg>
+                    Copy Image
+                </button>
+                <button class="patti-act-btn patti-act-whatsapp" id="btnPattiWhatsApp" onclick="sharePattiWhatsApp()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                    </svg>
+                    WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- file input for import is created dynamically in app.js (accepts .xlsx/.xls) -->
+
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>

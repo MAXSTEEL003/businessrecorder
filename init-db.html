@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Initialize Firestore — Business Records</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --bg: #080d14;
+            --surface: #0f1623;
+            --border: #1e2d45;
+            --primary: #3b82f6;
+            --text: #f0f6ff;
+            --muted: #7d93b2;
+            --green: #34d399;
+            --red: #f87171;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 2rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            max-width: 520px;
+            width: 100%;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, .6);
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: .4rem;
+        }
+
+        p {
+            font-size: .85rem;
+            color: var(--muted);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .log {
+            background: #0a1220;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: .8rem;
+            min-height: 180px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .log-line {
+            margin-bottom: .35rem;
+        }
+
+        .ok {
+            color: var(--green);
+        }
+
+        .err {
+            color: var(--red);
+        }
+
+        .info {
+            color: var(--muted);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: .7rem 1.6rem;
+            border-radius: 8px;
+            border: none;
+            font-size: .9rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all .18s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, .35);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 4px 24px rgba(59, 130, 246, .55);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            margin-left: .75rem;
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+
+        .status {
+            font-size: .8rem;
+            margin-top: 1rem;
+            color: var(--muted);
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>🔥 Initialize Firestore Collections</h1>
+        <p>This will create the required collections for your account:<br>
+            <strong>users/{uid}/records</strong> — your business records<br>
+            <strong>users/{uid}/meta/brokerageRates</strong> — brokerage rate settings<br><br>
+            Run this once after logging in. Safe to re-run — existing data is never overwritten.
+        </p>
+
+        <div class="log" id="log">
+            <div class="log-line info">Ready. Click Initialize to start…</div>
+        </div>
+
+        <button class="btn btn-primary" id="btnInit" onclick="runInit()">▶ Initialize Collections</button>
+        <a href="index.html" class="btn btn-ghost">← Back to App</a>
+        <p class="status" id="statusMsg"></p>
+    </div>
+
+    <script type="module">
+        import {
+            initFirebase, onAuthStateChanged,
+            collection, doc, addDoc, setDoc, getDocs, query
+        } from './firebase.js';
+
+        let auth, db, uid;
+
+        function log(msg, cls = 'info') {
+            const el = document.getElementById('log');
+            const line = document.createElement('div');
+            line.className = 'log-line ' + cls;
+            line.textContent = new Date().toLocaleTimeString() + '  ' + msg;
+            el.appendChild(line);
+            el.scrollTop = el.scrollHeight;
+        }
+
+        (async () => {
+            try {
+                log('Connecting to Firebase…');
+                const fb = await initFirebase();
+                auth = fb.auth; db = fb.db;
+                log('Firebase connected ✔', 'ok');
+
+                onAuthStateChanged(auth, user => {
+                    if (!user) {
+                        log('Not logged in — redirecting to login…', 'err');
+                        setTimeout(() => location.replace('./login.html'), 1500);
+                    } else {
+                        uid = user.uid;
+                        log(`Signed in as: ${user.email}`, 'ok');
+                        log(`User UID: ${uid}`, 'info');
+                        document.getElementById('statusMsg').textContent = 'Ready to initialize.';
+                    }
+                });
+            } catch (e) {
+                log('Firebase config error: ' + e.message, 'err');
+            }
+        })();
+
+        window.runInit = async function () {
+            if (!uid) { log('Not signed in!', 'err'); return; }
+            const btn = document.getElementById('btnInit');
+            btn.disabled = true;
+
+            try {
+                // ── 1. records collection ──
+                log('Checking records collection…');
+                const col = collection(db, 'users', uid, 'records');
+                const snap = await getDocs(query(col));
+
+                if (snap.empty) {
+                    log('No records found — creating sample record…');
+                    await addDoc(col, {
+                        date: new Date().toISOString().split('T')[0],
+                        millerName: 'Sample Miller',
+                        place: '', brand: '', shopName: '', area: '',
+                        billNo: '', qty: '', rate: '', amount: '',
+                        lr: '', ccPct: '', cc: '', tds: '', shortage: '',
+                        seller: '', netAmt: '', diffIn: '',
+                        chqAmt: '', chqNo: '', paymentDate: '', bank: '',
+                        noOfDays: '', noOfDayRec: '', status: ''
+                    });
+                    log('✔ Sample record created in users/' + uid + '/records', 'ok');
+                } else {
+                    log(`✔ records collection already has ${snap.size} document(s) — skipped.`, 'ok');
+                }
+
+                // ── 2. brokerageRates meta doc ──
+                log('Setting up brokerageRates…');
+                const ratesRef = doc(db, 'users', uid, 'meta', 'brokerageRates');
+                await setDoc(ratesRef, {
+                    buyerRate: 0.5,
+                    sellerRate: 0.5,
+                    notes: 'Default brokerage rates (% of Amount). Edit in Brokerage page.'
+                }, { merge: true }); // merge:true never overwrites existing values
+                log('✔ brokerageRates initialized at users/' + uid + '/meta/brokerageRates', 'ok');
+
+                log('');
+                log('✅ All collections initialized successfully!', 'ok');
+                document.getElementById('statusMsg').textContent = '✅ Done! You can go back to the app.';
+
+            } catch (e) {
+                log('ERROR: ' + e.message, 'err');
+                log('Check your Firestore security rules in Firebase Console.', 'info');
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+
+</html>
